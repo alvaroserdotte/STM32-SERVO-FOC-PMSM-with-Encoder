@@ -16,3 +16,5 @@ I made this inverter to experiment the servo motor FOC algorithm. As you can see
 **You have to use an ISOLATED USB or an ISOLATED STLINK to protect you PC of any transient or short circuit.**
 I´m sharing it for educational purposes.
 Remember to use it with care, we are dealing with high voltage 220AC and it is very dangerous :)
+![GitHub Logo](/images/logo.png)
+Format: ![Alt Text](url)
