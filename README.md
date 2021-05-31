@@ -7,7 +7,7 @@ I´m testing it with an old Fanuc junkyard servo motor.
 - **STK621-061** 30A Three Phase hybrid power inverter with predriver, overcurrent and overtemperature protection
 - **ACS712** Current measurement / Motor Phase U and V current
 - **Encoder** A-/A B-/B Z-/Z input
-- VBus Measurement
+- **VBus** Measurement
 
 # Working until now
 - Center Aligned PWM TIMER 1
@@ -24,5 +24,4 @@ I´m testing it with an old Fanuc junkyard servo motor.
 **You have to use an ISOLATED USB or an ISOLATED STLINK to protect you PC of any transient or short circuit.**
 I´m sharing it for educational purposes.
 Remember to use it with care, we are dealing with high voltage 220AC and it is very dangerous :)
-![GitHub Logo](/images/logo.png)
-Format: ![Alt Text](url)
+
