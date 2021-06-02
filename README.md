@@ -15,10 +15,23 @@ I´m testing it with an old Fanuc 5S/3000 junkyard servo motor (3000RPM 107V 10A
 - My Encoder have 2000 cpr, that means 8000 rising and falling edges in TIMER 2 Encoder Input
 - The motor is running fw and bw depending on Iq Set point, positive and negative POT variable values changed in debug mode (Simulating a potenciometer)
 
+# PHOTOS
+## Fanuc motors
+![IMG_1908](https://user-images.githubusercontent.com/84080967/120412340-c66de400-c32c-11eb-8e79-f12ca47a14ff.jpg)
+![IMG_1909](https://user-images.githubusercontent.com/84080967/120411772-ba355700-c32b-11eb-85e6-382903a11c1a.jpg)
+## Rectifier and Inverter
+![IMG_1910](https://user-images.githubusercontent.com/84080967/120411776-bbff1a80-c32b-11eb-82f1-4319a9326f66.jpg)
+![IMG_1911](https://user-images.githubusercontent.com/84080967/120411778-bd304780-c32b-11eb-9d0f-cb345f32a701.jpg)
+## Inverter PCB
+![IMG_1912](https://user-images.githubusercontent.com/84080967/120411782-be617480-c32b-11eb-95d7-f94fb46126a3.jpg)
+## Inverter PCB + Home Made Stencil
+![IMG_1913](https://user-images.githubusercontent.com/84080967/120412382-d8e81d80-c32c-11eb-9fa9-2cdadecbbc90.jpg)
+
+
 
 # TODO List
-- Space vector modulation
-- NRF24L01 Communication
+- [ ] Space vector modulation
+- [ ] NRF24L01 Communication
 
 # Safety instructions
 **You have to use an ISOLATED USB or an ISOLATED STLINK to protect you PC of any transient or short circuit.**
