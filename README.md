@@ -14,6 +14,10 @@ I´m testing it with an old Fanuc 5S/3000 junkyard servo motor (3000RPM 107V 10A
 - Iq and Id PID current control
 - My Encoder have 2000 cpr, that means 8000 rising and falling edges in TIMER 2 Encoder Input
 - The motor is running fw and bw depending on Iq Set point, positive and negative POT variable values changed in debug mode (Simulating a potenciometer)
+- Encoder Z input to "align" incremental encoder and the software
+- Absolute position measurement in degrees
+  - TIM2 compare generates interrupt each time the Encoder input counts 2000 pulses up, or down. 
+
 
 # PHOTOS
 ## Fanuc motors
@@ -30,8 +34,10 @@ I´m testing it with an old Fanuc 5S/3000 junkyard servo motor (3000RPM 107V 10A
 
 
 # TODO List
-- [ ] Space vector modulation
+- [ ] Space vector modulation?? maybe not necessary
 - [ ] NRF24L01 Communication
+- [ ] Speed control loop
+- [ ] Position control loop
 
 # Safety instructions
 **You have to use an ISOLATED USB or an ISOLATED STLINK to protect you PC of any transient or short circuit.**
