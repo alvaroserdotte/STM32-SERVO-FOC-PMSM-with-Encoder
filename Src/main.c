@@ -25,20 +25,10 @@
 //#include "nrf24l01.h"
 #include "arm_math.h"
 #include "nrf24.h"
+//#include "svpwm.h"
+volatile float ABS_Position;
+extern volatile int Encoder_CNT;
 uint8_t check;
-
-extern float IUF,IVF,VBus,VFBK2,TempSTK; 
-int I_PROT_COUNT = 15, Protect_I_Count = 0;
-int I_PROTECTION = 1000;
-uint32_t ADC_values[4];
-extern int IU_OFFSET,IV_OFFSET;
-float IUCALIB,IVCALIB,Data_Position,DataT;
-float SP_spd,SP_q,SP_d;
-char Status;
-int Pos_int;
-int POT = 0;
-int IQM;
-uint16_t Pos_uint;
 const float SQRT13 =  0.5773502f;   //	1/sqrt(3)
 const float SQRT23 =  1.1547005f;   //	2/sqrt(3)
 const float SQRT32 = 	0.8660254f;  	//	sqrt(3)/2
@@ -47,6 +37,18 @@ const int SQRT13_INT = 18918;
 const int SQRT23_INT = 37836;
 const float PIRAD = 3.1415926f;
 const float PIRAD_2 = 1.57079f;
+
+//ENCODER CONFIG
+const uint16_t ENC_PULSES = 8000;
+const uint16_t ENC_INITIAL = ENC_PULSES/2 - 1;
+const float ENC_PULSES_TO_DEGREES = 360.0f/ENC_PULSES;
+
+//MOTOR CONFIG
+const uint16_t MOTOR_POLES = 4;
+
+
+//REDUCER GEAR
+const float GEAR_RATIO = 1.0f/30.0f;
 typedef union {
 		float f;
 		unsigned char c[4];
@@ -59,17 +61,23 @@ typedef struct {
 	int P2;
 	int SetPoint;
 } Control_Parameter;
+extern float IUF,IVF,VBus,VFBK2,TempSTK; 
+int I_PROT_COUNT = 15, Protect_I_Count = 0;
+int I_PROTECTION = 1000;
+uint32_t ADC_values[4];
+extern int IU_OFFSET,IV_OFFSET;
+float IUCALIB,IVCALIB,Data_Position,DataT;
+float SP_spd,SP_q,SP_d;
+char Status;
+int Pos_int;
+int POT = 0;
+int IQM;
+uint16_t Pos_uint;
 
-void INIT_ALL(void);
-void PMSM_FOC(void);
-int MAX(int v1,int v2,int v3);
-int MIN(int v1,int v2,int v3);
-void Trip(void);
-static void error();
-void example();
+
 int delay;
-short int Pos_degrees,Pos_elec,Pos_Sin,Pos_Cos;
-short int SENO,SENO2;
+volatile short int Pos_degrees,Pos_elec,Pos_Sin,Pos_Cos;
+volatile short int SENO,SENO2;
 uint16_t merda;
 
 //float Pos_e;
@@ -85,6 +93,7 @@ int ialfa_INT,ibeta_INT;
 int Id,Iq;
 int qLimit;
 int qLimit2,qLimit3;
+volatile int Pos_temp,Pos_temp2,Pos_temp3;
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -187,7 +196,7 @@ void PMSM_FOC(void){
 			TIM1->CCR1 = 3600/2 + (int) 450;		//Leg U
 			TIM1->CCR2 = 3600/2 + (int) 0;		//Leg V
 			TIM1->CCR3 = 3600/2 + (int) 0;		//Leg W
-			TIM2->CNT = 0;
+			TIM2->CNT = ENC_INITIAL;
 		}
 		else {
 		if(delay > 25000) delay = 25000;
@@ -209,12 +218,17 @@ void PMSM_FOC(void){
 		}
 
 		//Calculo da posição 8000p/Rotation
-		Pos_elec = (TIM2->CNT*163835/10000) & 0x7FFF;				//angulo elétrico motor 4 Par de Polos
-		Pos_degrees = (TIM2->CNT*40958/10000) & 0x7FFF;				//angulo mecanico
+		//Pos_elec 4 turns/rotation -> Electrical Position -> 4 Pole Pairs / 0 - 360°/ 0 - 32767
+		//Pos_degrees mechanical position / 0 - 360°/ 0 - 32767
+
+		Pos_temp3 = (TIM2->CNT - 3999) + Encoder_CNT;
+		
+		Pos_temp2 = Pos_temp3%2000;
+		Pos_elec = (Pos_temp2*163835/10000) & 0x7FFF;				//angulo elétrico motor 4 Par de Polos
+		Pos_degrees = (Pos_temp2*40958/10000) & 0x7FFF;				//angulo mecanico
 		Pos_Sin = arm_sin_q15(Pos_elec);
 		Pos_Cos = arm_cos_q15(Pos_elec);
-		//Pos_degrees =  Pos_elec / 4.0f;	//angulo degrees
-		//Pos_int = sizeof(Pos_elec);
+
 		//TIPO DE CONTROLE
 		
 		#define POSITION 	0
@@ -270,9 +284,9 @@ void PMSM_FOC(void){
 				
 		//*******   Current control 'Q' part
 		{
-		arm_sqrt_q31(2250000 - (Pterm_d*Pterm_d),&qLimit);				//Limitador geométrico do 'q' baseado no Pterm_D
-		qLimit = qLimit/46341;
-		if (qLimit > 1500) qLimit = 1500;
+		arm_sqrt_q31(3534400 - (Pterm_d*Pterm_d),&qLimit);				//Limitador geométrico do 'q' baseado no Pterm_D
+		qLimit = qLimit/46341;		//SQRT function adequação
+		if (qLimit > 1880) qLimit = 1880;
 
 		Error_q=SP_q-Iq;
 			
@@ -412,7 +426,12 @@ void INIT_ALL(void) {
 	TIM1->CR1 |= TIM_CR1_CEN;		//TIMER EN
 	
 	//TIMER 2 ENCODER
-	TIM2->CNT = 0;
+	TIM2->DIER |= TIM_DIER_CC4IE | TIM_DIER_CC3IE;
+	TIM2->CCER |= TIM_CCER_CC4E | TIM_CCER_CC3E;
+	TIM2->CCR3 = ENC_INITIAL-2000;
+	TIM2->CCR4 = ENC_INITIAL+2000;
+	
+	TIM2->CNT = ENC_INITIAL;//3999;
 	TIM2->ARR = 7999;//
 	TIM2->CR1 |= TIM_CR1_CEN;		//TIMER EN
 	
@@ -484,6 +503,8 @@ int main(void)
 	HAL_GPIO_WritePin(relay2_GPIO_Port,relay2_Pin,1);	
 	Status = 'A';	//Initial State + Relayok
 	
+			//svpwm1.b_Vm = 10; 
+		//svpwm1.b_freq = 10;
 	//nRF24CE_L();
 	//check = nRF24_Check();
 	
@@ -499,9 +520,9 @@ int main(void)
 while (1)
   {
     /* USER CODE END WHILE */
-
+	
     /* USER CODE BEGIN 3 */
-	 
+		ABS_Position = ((float)Pos_temp3)*ENC_PULSES_TO_DEGREES;
   }
   /* USER CODE END 3 */
 }
@@ -877,11 +898,6 @@ static void MX_DMA_Init(void)
   /* DMA controller clock enable */
   __HAL_RCC_DMA1_CLK_ENABLE();
 
-  /* DMA interrupt init */
-  /* DMA1_Channel1_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA1_Channel1_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ(DMA1_Channel1_IRQn);
-
 }
 
 /**
@@ -949,7 +965,7 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_Init(INP_4_GPIO_Port, &GPIO_InitStruct);
 
   /* EXTI interrupt init*/
-  HAL_NVIC_SetPriority(EXTI0_IRQn, 0, 0);
+  HAL_NVIC_SetPriority(EXTI0_IRQn, 3, 0);
   HAL_NVIC_EnableIRQ(EXTI0_IRQn);
 
   HAL_NVIC_SetPriority(EXTI4_IRQn, 0, 0);

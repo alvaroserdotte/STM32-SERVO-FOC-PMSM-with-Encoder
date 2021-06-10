@@ -43,6 +43,7 @@ extern "C" {
 /* Exported constants --------------------------------------------------------*/
 /* USER CODE BEGIN EC */
 
+
 /* USER CODE END EC */
 
 /* Exported macro ------------------------------------------------------------*/
@@ -56,7 +57,13 @@ void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
 void Error_Handler(void);
 
 /* USER CODE BEGIN EFP */
-
+void INIT_ALL(void);
+void PMSM_FOC(void);
+int MAX(int v1,int v2,int v3);
+int MIN(int v1,int v2,int v3);
+void Trip(void);
+//static void error();
+//void example();
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/

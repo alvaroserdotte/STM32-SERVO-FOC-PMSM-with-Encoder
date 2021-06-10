@@ -28,9 +28,12 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN TD */
+extern const uint16_t ENC_INITIAL;
+volatile int Encoder_CNT;
+volatile int aligned = 0;
 extern void Trip(void);
 uint8_t SPI_RX;
-extern short int Pos_degrees,Pos_elec,Pos_Sin,Pos_Cos;
+extern volatile short int Pos_degrees,Pos_elec,Pos_Sin,Pos_Cos;
 extern void PMSM_FOC(void);
 short int  Z_TABLE[100];
 int Z_TABLE_idx;
@@ -73,11 +76,11 @@ float rpm,RPMf;
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
-extern DMA_HandleTypeDef hdma_adc1;
 extern ADC_HandleTypeDef hadc1;
 extern ADC_HandleTypeDef hadc2;
 extern SPI_HandleTypeDef hspi1;
 extern TIM_HandleTypeDef htim1;
+extern TIM_HandleTypeDef htim2;
 /* USER CODE BEGIN EV */
 
 /* USER CODE END EV */
@@ -219,20 +222,6 @@ void SysTick_Handler(void)
 /******************************************************************************/
 
 /**
-  * @brief This function handles PVD interrupt through EXTI line 16.
-  */
-void PVD_IRQHandler(void)
-{
-  /* USER CODE BEGIN PVD_IRQn 0 */
-
-  /* USER CODE END PVD_IRQn 0 */
-  HAL_PWR_PVD_IRQHandler();
-  /* USER CODE BEGIN PVD_IRQn 1 */
-
-  /* USER CODE END PVD_IRQn 1 */
-}
-
-/**
   * @brief This function handles EXTI line0 interrupt.
   */
 void EXTI0_IRQHandler(void)
@@ -252,29 +241,21 @@ void EXTI0_IRQHandler(void)
 void EXTI4_IRQHandler(void)
 {
   /* USER CODE BEGIN EXTI4_IRQn 0 */
-	Z_TABLE_idx++;
-	if (Z_TABLE_idx > 99) Z_TABLE_idx = 0;
-	Z_TABLE[Z_TABLE_idx] = Pos_degrees;
-	TIM2->CNT = 0;
+	//Z_TABLE_idx++;
+	//if (Z_TABLE_idx > 99) Z_TABLE_idx = 0;
+	//Z_TABLE[Z_TABLE_idx] = Pos_degrees;
+	if (aligned == 0) {
+		TIM2->CNT = ENC_INITIAL;
+		Encoder_CNT = 0;
+		aligned = 1;
+		EXTI->IMR &= ~EXTI_IMR_IM4;
+	}
+	
   /* USER CODE END EXTI4_IRQn 0 */
   HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_4);
   /* USER CODE BEGIN EXTI4_IRQn 1 */
 
   /* USER CODE END EXTI4_IRQn 1 */
-}
-
-/**
-  * @brief This function handles DMA1 channel1 global interrupt.
-  */
-void DMA1_Channel1_IRQHandler(void)
-{
-  /* USER CODE BEGIN DMA1_Channel1_IRQn 0 */
-
-  /* USER CODE END DMA1_Channel1_IRQn 0 */
-  HAL_DMA_IRQHandler(&hdma_adc1);
-  /* USER CODE BEGIN DMA1_Channel1_IRQn 1 */
-
-  /* USER CODE END DMA1_Channel1_IRQn 1 */
 }
 
 /**
@@ -330,7 +311,7 @@ void ADC1_2_IRQHandler(void)
 	if (CurrentLoopPer >= 2) {
 		
 		PMSM_FOC();
-			
+		//Periodic();
 		CurrentLoopPer = 0;
 	}	
   /* USER CODE END ADC1_2_IRQn 1 */
@@ -352,6 +333,24 @@ void TIM1_BRK_IRQHandler(void)
   {
   }
   /* USER CODE END TIM1_BRK_IRQn 1 */
+}
+
+/**
+  * @brief This function handles TIM2 global interrupt.
+  */
+void TIM2_IRQHandler(void)
+{
+  /* USER CODE BEGIN TIM2_IRQn 0 */
+	
+	//Acumula encoder no contador
+	Encoder_CNT += TIM2->CNT - ENC_INITIAL;
+	TIM2->CNT = ENC_INITIAL;
+	
+  /* USER CODE END TIM2_IRQn 0 */
+  HAL_TIM_IRQHandler(&htim2);
+  /* USER CODE BEGIN TIM2_IRQn 1 */
+
+  /* USER CODE END TIM2_IRQn 1 */
 }
 
 /**
